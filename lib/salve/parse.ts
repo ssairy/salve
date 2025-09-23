@@ -5,9 +5,9 @@
  * @copyright Mangalam Research Center for Buddhist Languages
  */
 "use strict";
-import fileUrl from "file-url";
 import * as fs from "fs";
 import * as path from "path";
+import { pathToFileURL } from "url";
 import { SaxesAttributeNS, SaxesParser, SaxesTag } from "saxes";
 
 import { convertRNGToPattern, DefaultNameResolver, Grammar,
@@ -45,7 +45,9 @@ Promise<Grammar> {
   }
 
   // Treat it as a Relax NG schema.
-  const conversionResult = await convertRNGToPattern(new URL(fileUrl(rngSource)));
+  const conversionResult = await convertRNGToPattern(new URL(
+    pathToFileURL(path.resolve(rngSource)).href,
+  ));
   const schemaText = conversionResult.schemaText;
   console.log(schemaText) // I will then be able to pass this on to a schematron validator
   return conversionResult.pattern;

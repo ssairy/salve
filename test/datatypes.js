@@ -8,11 +8,16 @@
 
 "use strict";
 
-const { assert } = require("chai");
 const mergeOptions = require("merge-options");
 const datatypes = require("../build/dist/lib/salve/datatypes");
 const { DefaultNameResolver } =
       require("../build/dist/lib/salve/default_name_resolver");
+
+let assert;
+
+before(async () => {
+  ({ assert } = await import("chai"));
+});
 
 const decimalProgram = {
   equal: {

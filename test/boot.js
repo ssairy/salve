@@ -3,12 +3,42 @@
 "use strict";
 
 const { URL } = require("url");
-const fetch = require("node-fetch");
 const util = require("util");
 
 global.URL = URL;
-global.fetch = fetch;
 global.TextEncoder = util.TextEncoder;
+
+if (typeof global.fetch !== "function") {
+  const dynamicImport = new Function(
+    "modulePath",
+    "return import(modulePath);",
+  );
+
+  const nodeFetchPromise = dynamicImport("node-fetch");
+
+  const fetchProxy = (...args) =>
+    nodeFetchPromise.then(mod => {
+      const fetchFn = mod.default ?? mod;
+      return fetchFn(...args);
+    });
+
+  global.fetch = fetchProxy;
+
+  nodeFetchPromise.then(mod => {
+    const fetchFn = mod.default ?? mod;
+    global.fetch = fetchFn;
+
+    ["Headers", "Request", "Response", "FormData", "Blob", "File"].forEach(key => {
+      if (mod[key] !== undefined && global[key] === undefined) {
+        global[key] = mod[key];
+      }
+    });
+  }).catch(error => {
+    process.nextTick(() => {
+      throw error;
+    });
+  });
+}
 
 const Mocha = require("mocha");
 

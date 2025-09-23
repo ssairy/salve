@@ -8,8 +8,13 @@
 
 "use strict";
 
-const { assert } = require("chai");
 const { EName, DefaultNameResolver } = require("../build/dist/");
+
+let assert;
+
+before(async () => {
+  ({ assert } = await import("chai"));
+});
 
 const mapping = {
   btw: "http://lddubeau.com/ns/btw-storage",

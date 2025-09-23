@@ -1,12 +1,16 @@
-/* global describe it after */
+/* global describe it after before */
 
 "use strict";
 
-const fileURL = require("file-url");
 const path = require("path");
 const { spawn } = require("child_process");
 const fs = require("fs");
-const { expect } = require("chai");
+const { pathToFileURL } = require("url");
+let expect;
+
+before(async () => {
+  ({ expect } = await import("chai"));
+});
 const { SaxesParser } = require("saxes");
 const conversion = require("../build/dist/lib/salve/conversion");
 const { BasicParser, dependsOnExternalFile } =
@@ -23,7 +27,7 @@ describe("rng simplification", () => {
     const stepPath =
           `lib/salve/rng-simplification/rng-simplification_step${number}.xsl`;
 
-    const originalDir = fileURL(path.resolve(path.dirname(inpath)));
+    const originalDir = pathToFileURL(path.resolve(path.dirname(inpath))).href;
     let child;
     // Only step 1 requires XSLT 2.
     if (number === 1) {
@@ -122,7 +126,7 @@ describe("rng simplification", () => {
     const step = simplifier[stepName];
     return Promise.resolve()
       .then(() => (stepName === "step1" ?
-                   step(new URL(fileURL(path.resolve(inpath))), tree, parseJS) :
+                   step(new URL(pathToFileURL(path.resolve(inpath)).href), tree, parseJS) :
                    step(tree)))
       .then(root => conversion.serialize(root));
   }

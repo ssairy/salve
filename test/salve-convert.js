@@ -4,13 +4,19 @@
  * @copyright Mangalam Research Center for Buddhist Languages
  */
 
-/* global it, describe, afterEach */
+/* global it, describe, afterEach, before */
 
 "use strict";
 
-const { assert, expect } = require("chai");
 const { spawn } = require("child_process");
 const fs = require("fs");
+
+let assert;
+let expect;
+
+before(async () => {
+  ({ assert, expect } = await import("chai"));
+});
 
 describe("salve-convert", function convert() {
   this.timeout(0);

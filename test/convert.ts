@@ -9,9 +9,9 @@
 "use strict";
 
 import * as path from "path";
+import { pathToFileURL } from "url";
 
 import { expect } from "chai";
-import fileUrl from "file-url";
 
 import { ConversionResult, convertRNGToPattern, makeResourceLoader,
          Resource, ResourceLoader } from "../build/dist";
@@ -46,8 +46,9 @@ describe("convertRNGToPattern", () => {
 
     before(async () => {
       resourceLoader = new MyLoader();
-      result = await convertRNGToPattern(new URL(fileUrl(
-        path.join(__dirname, "inclusion/doc-unannotated.rng"))),
+      result = await convertRNGToPattern(new URL(
+        pathToFileURL(path.join(__dirname, "inclusion/doc-unannotated.rng")).href,
+      ),
                                          {
           createManifest: true,
           manifestHashAlgorithm: "SHA-1",

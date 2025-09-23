@@ -3,13 +3,18 @@
  * @license MPL 2.0
  * @copyright Mangalam Research Center for Buddhist Languages
  */
-/* global it, describe */
+/* global it, describe, before */
 
 "use strict";
 
-const { assert } = require("chai");
 const XRegExp = require("xregexp");
 const regexp = require("../build/dist/lib/salve/datatypes/regexp");
+
+let assert;
+
+before(async () => {
+  ({ assert } = await import("chai"));
+});
 
 const conversionTests = [
   "", "^$", RegExp,

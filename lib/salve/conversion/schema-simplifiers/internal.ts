@@ -599,7 +599,19 @@ export class InternalSimplifier<RL extends ResourceLoader>
     }
   }
 
-  private async parse(filePath: URL, schemaResource: Resource, schemaText: string): Promise<Element> {
+  private async parse(filePath: URL, schemaResource?: Resource,
+                      schemaText?: string): Promise<Element> {
+    let resource = schemaResource;
+    let text = schemaText;
+
+    if (resource === undefined) {
+      resource = await this.options.resourceLoader.load(filePath);
+    }
+
+    if (text === undefined) {
+      text = await resource.getText();
+    }
+
     const fileName = filePath.toString();
     const saxesParser = new SaxesParser({ xmlns: true,
                                           position: false,
@@ -610,7 +622,7 @@ export class InternalSimplifier<RL extends ResourceLoader>
     }
 
     const parser = new BasicParser(saxesParser, validator);
-    parser.saxesParser.write(schemaText);
+    parser.saxesParser.write(text);
     parser.saxesParser.close();
 
     if (validator !== undefined) {
@@ -627,7 +639,7 @@ export class InternalSimplifier<RL extends ResourceLoader>
           const digest =
             // tslint:disable-next-line:await-promise
             await crypto.subtle.digest(algo,
-                                       new TextEncoder().encode(schemaText));
+                                       new TextEncoder().encode(text));
 
           const arr = new Uint8Array(digest);
           let hash = `${algo}-`;
@@ -641,7 +653,7 @@ export class InternalSimplifier<RL extends ResourceLoader>
       }
       else {
         this.manifestPromises.push((async () => {
-          const hash = await algo(schemaResource);
+          const hash = await algo(resource);
 
           return { filePath: fileName, hash };
         })());

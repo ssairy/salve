@@ -6,29 +6,91 @@
  */
 import { ArgumentParser } from "argparse";
 import * as fs from "fs";
-import * as nodeFetch from "node-fetch";
 import * as path from "path";
 import requireDir from "require-dir";
 import * as temp from "temp";
-import { URL } from "url";
+import { URL, pathToFileURL } from "url";
 import * as util from "util";
 
-import fileUrl from "file-url";
+import type { Element, SimplificationResult } from "../conversion";
 
-(global as any).fetch = nodeFetch;
-(global as any).URL = URL;
-(global as any).TextEncoder = util.TextEncoder;
+const globalAny = globalThis as any;
+
+const fileUrl = (filePath: string): string =>
+  pathToFileURL(path.resolve(filePath)).href;
+
+if (typeof globalAny.fetch !== "function") {
+  type FetchModule = {
+    default?: typeof fetch;
+    [key: string]: unknown;
+  };
+
+  const dynamicImport = new Function(
+    "modulePath",
+    "return import(modulePath);",
+  ) as (modulePath: string) => Promise<FetchModule>;
+
+  const nodeFetchPromise = dynamicImport("node-fetch");
+
+  const fetchProxy: typeof fetch = ((...args: Parameters<typeof fetch>) =>
+    nodeFetchPromise.then(mod => {
+      const fetchFn = (mod.default ?? mod) as typeof fetch;
+      return fetchFn(...args);
+    })) as typeof fetch;
+
+  globalAny.fetch = fetchProxy;
+
+  nodeFetchPromise.then(mod => {
+    const fetchFn = (mod.default ?? mod) as typeof fetch;
+    globalAny.fetch = fetchFn;
+
+    const assignableKeys = [
+      "Headers",
+      "Request",
+      "Response",
+      "FormData",
+      "Blob",
+      "File",
+    ] as const;
+
+    assignableKeys.forEach(key => {
+      if (mod[key] !== undefined && globalAny[key] === undefined) {
+        globalAny[key] = mod[key];
+      }
+    });
+  }).catch(error => {
+    throw error;
+  });
+}
+
+globalAny.URL = URL;
+globalAny.TextEncoder = util.TextEncoder;
 
 // We load individual modules rather than the build module because the
 // conversion code uses parts of salve that are not public.
-import { Element, getAvailableSimplifiers, getAvailableValidators,
-         makeResourceLoader, makeSimplifier, makeValidator,
-         parseSimplifiedSchema, SchemaValidationError, serialize,
-         SimplificationResult } from "../conversion";
-import { ParameterParsingError, ValueValidationError } from "../datatypes";
-import { writeTreeToJSON } from "../json-format/write";
-import { version } from "../validate";
-import { Fatal } from "./convert/fatal";
+const conversion = require("../conversion") as typeof import("../conversion");
+const {
+  getAvailableSimplifiers,
+  getAvailableValidators,
+  makeResourceLoader,
+  makeSimplifier,
+  makeValidator,
+  parseSimplifiedSchema,
+  SchemaValidationError,
+  serialize,
+} = conversion;
+
+const datatypes = require("../datatypes") as typeof import("../datatypes");
+const { ParameterParsingError, ValueValidationError } = datatypes;
+
+const jsonFormat = require("../json-format/write") as typeof import("../json-format/write");
+const { writeTreeToJSON } = jsonFormat;
+
+const validateModule = require("../validate") as typeof import("../validate");
+const { version } = validateModule;
+
+const convertFatal = require("./convert/fatal") as typeof import("./convert/fatal");
+const { Fatal } = convertFatal;
 
 // tslint:disable:no-console no-non-null-assertion radix
 
@@ -118,12 +180,12 @@ parser.add_argument("--validator", {
 
 parser.add_argument("--no-optimize-ids", {
   help: "Do NOT optimize the identifiers used by references and definitions.",
-  action: "storeTrue",
+  action: "store_true",
 });
 
 parser.add_argument("--include-paths", {
   help: "Include RNG node path information in the JavaScript file.",
-  action: "storeTrue",
+  action: "store_true",
 });
 
 parser.add_argument("--format-version", {
@@ -134,7 +196,7 @@ parser.add_argument("--format-version", {
 
 parser.add_argument("--simplify-only", {
   help: "Stop converting at the simplification stage.",
-  action: "storeTrue",
+  action: "store_true",
 });
 
 parser.add_argument("--simplify-to", {
@@ -147,34 +209,34 @@ Implies ``--simplify-only``.",
 
 parser.add_argument("--no-output", {
   help: "Skip producing any output. This may be useful for debugging.",
-  action: "storeTrue",
+  action: "store_true",
 });
 
 parser.add_argument("--simplified-input", {
   help: "The input is as simplified RNG.",
-  action: "storeTrue",
+  action: "store_true",
 });
 
 parser.add_argument("--keep-temp", {
   help: "Keep the temporary files around. Useful for diagnosis.",
-  action: "storeTrue",
+  action: "store_true",
 });
 
 parser.add_argument("--verbose", {
   help: "Run verbosely.",
-  action: "storeTrue",
+  action: "store_true",
 });
 
 parser.add_argument("--timing", {
   help: "Output timing information. Implies --verbose.",
-  action: "storeTrue",
+  action: "store_true",
 });
 
 parser.add_argument("--verbose-format", {
   help: `Outputs a verbose version of the data, with actual class names \
 instead of numbers. Implies --no-optimize-ids. This format is cannot \
 be read by salve. It is meant for debugging purposes only.`,
-  action: "storeTrue",
+  action: "store_true",
 });
 
 parser.add_argument("--allow-incomplete-types", {
@@ -351,7 +413,7 @@ start().then(() => {
   throw e;
 });
 
-//  LocalWords:  cli MPL uncaughtException externalRef RNG storeTrue args jing
+//  LocalWords:  cli MPL uncaughtException externalRef RNG store_true args jing
 //  LocalWords:  tempDir dev startTime xsl rng stepStart stepNo xsltproc JS
 //  LocalWords:  stringparam originalDir repeatWhen simplifyingStartTime prog
 //  LocalWords:  xmllint convStartTime

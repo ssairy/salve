@@ -9,8 +9,11 @@
 
 "use strict";
 
-const { assert } = require("chai");
-const fileURL = require("file-url");
+let assert;
+before(async () => {
+  ({ assert } = await import("chai"));
+});
+const { pathToFileURL } = require("url");
 const fs = require("fs");
 const path = require("path");
 const { parse } = require("../build/dist/lib/salve/parse");
@@ -97,7 +100,7 @@ function makeTests(test) {
   const skip = skips[test.test] || {};
   if (!skip.incorrect && test.incorrect) {
     it(test.incorrect,
-       () => salve.convertRNGToPattern(new URL(fileURL(test.incorrect)))
+       () => salve.convertRNGToPattern(new URL(pathToFileURL(test.incorrect).href))
        .then(() => assert.isFalse(true,
                                   "expected conversion to fail, but it passed"),
              // A failure is what we want.
@@ -112,7 +115,7 @@ function makeTests(test) {
       describe(`valid and invalid cases (${test.correct})`, () => {
         const data = {};
 
-        before(() => salve.convertRNGToPattern(new URL(fileURL(test.correct)))
+        before(() => salve.convertRNGToPattern(new URL(pathToFileURL(test.correct).href))
                .then((result) => {
                  data.grammar = result.pattern;
                }));

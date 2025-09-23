@@ -9,7 +9,12 @@ const gulp = require("gulp");
 const log = require("fancy-log");
 const gulpNewer = require("gulp-newer");
 const Promise = require("bluebird");
-const del = require("del");
+
+let del;
+(async () => {
+  del = (await import("del")).default;
+})();
+
 const touch = require("touch");
 const { ArgumentParser } = require("argparse");
 const eslint = require("gulp-eslint");
@@ -33,8 +38,7 @@ let localConfig = {};
 try {
   // eslint-disable-next-line global-require, import/no-unresolved
   localConfig = require("./gulp.local");
-}
-catch (e) {
+} catch (e) {
   if (e.code !== "MODULE_NOT_FOUND") {
     throw e;
   }
@@ -77,15 +81,19 @@ parser.add_argument(["--browsers"], {
 const options = parser.parse_args(process.argv.slice(2));
 
 function runTsc(tsconfigPath, dest) {
-  return execFileAndReport("./node_modules/.bin/tsc", ["-p", tsconfigPath,
-                                                       "--outDir", dest], { shell: true });
+  return execFileAndReport(
+    "./node_modules/.bin/tsc",
+    ["-p", tsconfigPath, "--outDir", dest],
+    { shell: true }
+  );
 }
 
 function runTslint(tsconfig, tslintConfig) {
   return execFileAndReport(
     "./node_modules/.bin/tslint",
     ["--format", "verbose", "--project", tsconfig, "-c", tslintConfig],
-    { capture: ["stdout", "stderr"] });
+    { capture: ["stdout", "stderr"] }
+  );
 }
 
 function tsc() {
@@ -93,15 +101,16 @@ function tsc() {
 }
 
 function runEslint() {
-  return gulp.src([
-    "*.js",
-    "bin/**/*.js",
-    "gulptasks/**/*.js",
-    "test/**/*.js",
-    "!test/salve-convert/**/*.js",
-    "misc/**/*.js",
-    "!test/**/simplified-rng*.js",
-  ])
+  return gulp
+    .src([
+      "*.js",
+      "bin/**/*.js",
+      "gulptasks/**/*.js",
+      "test/**/*.js",
+      "!test/salve-convert/**/*.js",
+      "misc/**/*.js",
+      "!test/**/simplified-rng*.js",
+    ])
     .pipe(eslint())
     .pipe(eslint.format())
     .pipe(eslint.failAfterError());
@@ -113,13 +122,11 @@ function tslint() {
 
 function copySrc() {
   const dest = "build/dist/";
-  return gulp.src([
-    "package.json",
-    "README.md",
-    "bin/*",
-    "lib/**/*.d.ts",
-    "lib/**/*.xsl",
-  ], { base: "." })
+  return gulp
+    .src(
+      ["package.json", "README.md", "bin/*", "lib/**/*.d.ts", "lib/**/*.xsl"],
+      { base: "." }
+    )
     .pipe(gulpNewer(dest))
     .pipe(gulp.dest(dest));
 }
@@ -148,137 +155,179 @@ function karma() {
 function mocha() {
   return spawn(
     "./node_modules/.bin/mocha",
-    options.mocha_grep ? ["--grep", options.mocha_grep] :
-      [],
-    { stdio: "inherit" });
+    options.mocha_grep ? ["--grep", options.mocha_grep] : [],
+    { stdio: "inherit" }
+  );
 }
 
 // === gulp tasks ===
 
 gulp.task("lint", gulp.parallel(tslint, runEslint));
 
-gulp.task("copy", gulp.series(copySrc,
-                              () => fs.writeFileAsync("build/dist/.npmignore",
-                                                      "bin/parse.js")));
-gulp.task("convert-schema",
-          // We have to create the directory before converting.
-          () => execFileAndReport("mkdir", ["-p",
-                                            "build/dist/lib/salve/schemas/"])
-          // We have to write an empty file so that salve-convert will at least
-          // not crash due to the file being missing.
-          .then(() => fs.writeFileAsync(
-            "build/dist/lib/salve/schemas/relaxng.json", "{}"))
-          // We use the previous version of salve to convert the
-          // validation schema.
-          .then(() => execFileAndReport(
-            "./build/dist/bin/salve-convert",
-            ["--validator=none", "lib/salve/schemas/relaxng.rng",
-             "build/dist/lib/salve/schemas/relaxng.json"], { shell: true })));
+gulp.task(
+  "copy",
+  gulp.series(copySrc, () =>
+    fs.writeFileAsync("build/dist/.npmignore", "bin/parse.js")
+  )
+);
+gulp.task(
+  "convert-schema",
+  // We have to create the directory before converting.
+  () =>
+    execFileAndReport("mkdir", ["-p", "build/dist/lib/salve/schemas/"])
+      // We have to write an empty file so that salve-convert will at least
+      // not crash due to the file being missing.
+      .then(() =>
+        fs.writeFileAsync("build/dist/lib/salve/schemas/relaxng.json", "{}")
+      )
+      // We use the previous version of salve to convert the
+      // validation schema.
+      .then(() =>
+        execFileAndReport(
+          "./build/dist/bin/salve-convert",
+          [
+            "--validator=none",
+            "lib/salve/schemas/relaxng.rng",
+            "build/dist/lib/salve/schemas/relaxng.json",
+          ],
+          { shell: true }
+        )
+      )
+);
 
-gulp.task("default", gulp.series(gulp.parallel(tsc, "copy"),
-                                 "convert-schema",
-                                 () => webpack()));
+gulp.task(
+  "default",
+  gulp.series(gulp.parallel(tsc, "copy"), "convert-schema", () => webpack())
+);
 
 gulp.task("karma", gulp.series("default", karma));
 
 let packname;
 
-gulp.task("pack", gulp.series(
-  "default",
-  () => execFile("npm", ["pack"], { cwd: "build/dist" })
-    .then((result) => {
+gulp.task(
+  "pack",
+  gulp.series("default", () =>
+    execFile("npm", ["pack"], { cwd: "build/dist" }).then((result) => {
       const { stdout } = result;
       packname = stdout.trim();
       return fs.renameAsync(`build/dist/${packname}`, `build/${packname}`);
-    })));
+    })
+  )
+);
 
-gulp.task("install_test", gulp.series(
-  "pack",
-  Promise.coroutine(function *install() {
-    const testDir = "build/install_dir";
-    yield del(testDir);
-    yield fs.mkdirAsync(testDir);
-    yield fs.mkdirAsync(path.join(testDir, "node_modules"));
-    yield execFile("npm", ["install", `../${packname}`], { cwd: testDir });
-    let module = yield fs.readFileAsync("lib/salve/parse.ts");
-    module = module.toString();
-    module = module.replace("./validate", "salve-annos");
-    yield fs.writeFileAsync(path.join(testDir, "parse.ts"), module);
-    yield execFileAndReport("../../node_modules/.bin/tsc",
-                            ["--lib", "es2015,dom", "--esModuleInterop",
-                             "parse.ts"],
-                            { cwd: testDir });
-    yield del(testDir);
-  })));
+gulp.task(
+  "install_test",
+  gulp.series(
+    "pack",
+    Promise.coroutine(function* install() {
+      const testDir = "build/install_dir";
+      yield del(testDir);
+      yield fs.mkdirAsync(testDir);
+      yield fs.mkdirAsync(path.join(testDir, "node_modules"));
+      yield execFile("npm", ["install", `../${packname}`], { cwd: testDir });
+      let module = yield fs.readFileAsync("lib/salve/parse.ts");
+      module = module.toString();
+      module = module.replace("./validate", "salve-annos");
+      yield fs.writeFileAsync(path.join(testDir, "parse.ts"), module);
+      yield execFileAndReport(
+        "../../node_modules/.bin/tsc",
+        ["--lib", "es2015,dom", "--esModuleInterop", "parse.ts"],
+        { cwd: testDir }
+      );
+      yield del(testDir);
+    })
+  )
+);
 
-gulp.task("publish", gulp.series("install_test",
-                                 () => execFile("npm", ["publish", packname],
-                                                { cwd: "build" })));
+gulp.task(
+  "publish",
+  gulp.series("install_test", () =>
+    execFile("npm", ["publish", packname], { cwd: "build" })
+  )
+);
 
 // This task also needs to check the hash of the latest commit because typedoc
 // generates links to source based on the latest commit in effect when it is
 // run. So if a commit happened between the time the doc was generated last, and
 // now, we need to regenerate the docs.
-gulp.task("typedoc",
-          gulp.series(
-            tslint,
-            Promise.coroutine(function *task() {
-              const sources = ["lib/**/*.ts"];
-              const stamp = "build/api.stamp";
-              const hashPath = "./build/typedoc.hash.txt";
+gulp.task(
+  "typedoc",
+  gulp.series(
+    tslint,
+    Promise.coroutine(function* task() {
+      const sources = ["lib/**/*.ts"];
+      const stamp = "build/api.stamp";
+      const hashPath = "./build/typedoc.hash.txt";
 
-              const prelim = yield Promise.all(
-                [fs.readFileAsync(hashPath).then(hash => hash.toString())
-                 .catch(() => undefined),
-                 execFile("git", ["rev-parse", "--short", "HEAD"])
-                 .then(result => result.stdout),
-                ]);
+      const prelim = yield Promise.all([
+        fs
+          .readFileAsync(hashPath)
+          .then((hash) => hash.toString())
+          .catch(() => undefined),
+        execFile("git", ["rev-parse", "--short", "HEAD"]).then(
+          (result) => result.stdout
+        ),
+      ]);
 
-              const savedHash = prelim[0];
-              const currentHash = prelim[1][0];
+      const savedHash = prelim[0];
+      const currentHash = prelim[1][0];
 
-              if ((currentHash === savedHash) &&
-                  !(yield newer(sources, stamp))) {
-                log("No change, skipping typedoc.");
-                return;
-              }
+      if (currentHash === savedHash && !(yield newer(sources, stamp))) {
+        log("No change, skipping typedoc.");
+        return;
+      }
 
-              const { version } = JSON.parse(fs.readFileSync("package.json"));
-              const tsoptions = [
-                "--out", `./build/api/salve/${version}`,
-                "--name", "salve-annos",
-                "--tsconfig", "./tsconfig.json",
-                "--listInvalidSymbolLinks",
-              ];
+      const { version } = JSON.parse(fs.readFileSync("package.json"));
+      const tsoptions = [
+        "--out",
+        `./build/api/salve/${version}`,
+        "--name",
+        "salve-annos",
+        "--tsconfig",
+        "./tsconfig.json",
+        "--listInvalidSymbolLinks",
+      ];
 
-              if (!options.doc_private) {
-                tsoptions.push("--excludePrivate");
-              }
+      if (!options.doc_private) {
+        tsoptions.push("--excludePrivate");
+      }
 
-              yield spawn("./node_modules/.bin/typedoc", tsoptions,
-                          { stdio: "inherit" });
+      yield spawn("./node_modules/.bin/typedoc", tsoptions, {
+        stdio: "inherit",
+      });
 
-              yield Promise.all([fs.writeFileAsync(hashPath, currentHash),
-                                 touch(stamp)]);
-            })));
+      yield Promise.all([
+        fs.writeFileAsync(hashPath, currentHash),
+        touch(stamp),
+      ]);
+    })
+  )
+);
 
 gulp.task("doc", gulp.task("typedoc"));
 
-gulp.task("gh-pages-build", gulp.series("typedoc", () => {
-  const dest = "gh-pages-build";
-  return gulp.src("**/*", { cwd: "build/api/" })
-    .pipe(gulpNewer(dest))
-    .pipe(gulp.dest(dest));
-}));
+gulp.task(
+  "gh-pages-build",
+  gulp.series("typedoc", () => {
+    const dest = "gh-pages-build";
+    return gulp
+      .src("**/*", { cwd: "build/api/" })
+      .pipe(gulpNewer(dest))
+      .pipe(gulp.dest(dest));
+  })
+);
 
-gulp.task("versync", () => versync.run({
-  onMessage: log,
-}));
+gulp.task("versync", () =>
+  versync.run({
+    onMessage: log,
+  })
+);
 
 gulp.task("mocha", gulp.series("default", mocha));
 
-gulp.task("test",
-          gulp.series("default",
-                      gulp.parallel("versync", mocha, karma, "lint")));
+gulp.task(
+  "test",
+  gulp.series("default", gulp.parallel("versync", mocha, karma, "lint"))
+);
 
 gulp.task("clean", () => del(["build", "gh-pages-build"]));

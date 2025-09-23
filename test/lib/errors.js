@@ -1,9 +1,14 @@
-/* global it, describe */
+/* global it, describe, before */
 
 "use strict";
 
-const { expect } = require("chai");
 const { ValidationError, ElementNameError, Name } = require("../../build/dist");
+
+let expect;
+
+before(async () => {
+  ({ expect } = await import("chai"));
+});
 
 describe("ValidationError", () => {
   describe("#equals", () => {

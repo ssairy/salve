@@ -10,9 +10,14 @@
 
 const fs = require("fs");
 const path = require("path");
-const { assert } = require("chai");
 const { SaxesParser } = require("saxes");
 const salve = require("../build/dist");
+
+let assert;
+
+before(async () => {
+  ({ assert } = await import("chai"));
+});
 
 function fileAsString(p) {
   return fs.readFileSync(path.resolve(p), "utf8").toString();
