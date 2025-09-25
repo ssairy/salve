@@ -45,12 +45,18 @@ function makeParser(er, walker) {
       const { local, prefix, value } = attr;
       // xmlns="..." or xmlns:...=...
       if (name === "xmlns" || prefix === "xmlns") {
-        er.recordEvent(walker, "definePrefix", name === "xmlns" ? "" : local,
-                       value);
+        er.recordEvent(
+          walker,
+          "definePrefix",
+          name === "xmlns" ? "" : local,
+          value
+        );
       }
     }
 
-    const ename = walker.nameResolver.resolveName(`${node.prefix}:${node.local}`);
+    const ename = walker.nameResolver.resolveName(
+      `${node.prefix}:${node.local}`
+    );
     node.uri = ename.ns;
 
     er.recordEvent(walker, "enterStartTag", node.uri, node.local);
@@ -124,7 +130,7 @@ class EventRecorder {
   }
 
   issueEvent(walker, evIx, ev) {
-    const sliceLen = (ev[0] === "leaveStartTag") ? 1 : ev.length;
+    const sliceLen = ev[0] === "leaveStartTag" ? 1 : ev.length;
     const evParams = Array.prototype.slice.call(ev, 0, sliceLen);
 
     // For the clone check
@@ -134,26 +140,30 @@ class EventRecorder {
 
     if (this.check_fireEvent_invocation) {
       this.ce.compare(
-        `\ninvoking fireEvent with Event: ${evParams.join(", ").trim()
-.replace(/\s+\n/g, "\n")}`, evParams);
+        `\ninvoking fireEvent with Event: ${evParams
+          .join(", ")
+          .trim()
+          .replace(/\s+\n/g, "\n")}`,
+        evParams
+      );
     }
 
     let ret;
     switch (evParams[0]) {
-    case "enterContext":
-      walker.nameResolver.enterContext();
-      ret = false;
-      break;
-    case "leaveContext":
-      walker.nameResolver.leaveContext();
-      ret = false;
-      break;
-    case "definePrefix":
-      walker.nameResolver.definePrefix(...evParams.slice(1));
-      ret = false;
-      break;
-    default:
-      ret = walker.fireEvent(evParams[0], evParams.slice(1));
+      case "enterContext":
+        walker.nameResolver.enterContext();
+        ret = false;
+        break;
+      case "leaveContext":
+        walker.nameResolver.leaveContext();
+        ret = false;
+        break;
+      case "definePrefix":
+        walker.nameResolver.definePrefix(...evParams.slice(1));
+        ret = false;
+        break;
+      default:
+        ret = walker.fireEvent(evParams[0], evParams.slice(1));
     }
     this.ce.compare(`fireEvent returned ${errorsToString(ret)}`, evParams);
     if (this.check_possible) {
@@ -161,11 +171,15 @@ class EventRecorder {
       // We sort events alphabetically, because the
       // implementation does not guarantee any specific order.
       possibleEvs.sort();
-      if (evParams[0] !== "enterContext" &&
-          evParams[0] !== "leaveContext" &&
-          evParams[0] !== "definePrefix") {
+      if (
+        evParams[0] !== "enterContext" &&
+        evParams[0] !== "leaveContext" &&
+        evParams[0] !== "definePrefix"
+      ) {
         this.ce.compare(
-          `possible events\n${salve.eventsToTreeString(possibleEvs)}`, evParams);
+          `possible events\n${salve.eventsToTreeString(possibleEvs)}`,
+          evParams
+        );
       }
     }
   }
@@ -187,8 +201,11 @@ class ComparisonEngine {
     msg = lines.join("\n");
     const to = this.expected.slice(this.exp_ix, this.exp_ix + lines.length);
 
-    assert.equal(msg, to.join("\n"),
-                 `at line: ${this.exp_ix + 1} event ${ev.join(", ")}`);
+    assert.equal(
+      msg,
+      to.join("\n"),
+      `at line: ${this.exp_ix + 1} event ${ev.join(", ")}`
+    );
     this.exp_ix += lines.length;
   }
 }
@@ -201,8 +218,7 @@ function makeValidTest(dir) {
     let tree;
     try {
       tree = salve.readTreeFromJSON(source);
-    }
-    catch (e) {
+    } catch (e) {
       if (e instanceof salve.ValidationError) {
         // eslint-disable-next-line no-console
         console.log(e.toString());
@@ -220,11 +236,14 @@ function makeValidTest(dir) {
     const er = new EventRecorder(ce);
 
     const contextIndependent = tree.whollyContextIndependent();
-    ce.compare(`wholly context-independent ${contextIndependent}`,
-               ["*context-independent*"]);
+    ce.compare(`wholly context-independent ${contextIndependent}`, [
+      "*context-independent*",
+    ]);
 
-    ce.compare(`possible events\n${salve.eventsToTreeString(walker.possible())}`,
-               ["initial"]);
+    ce.compare(
+      `possible events\n${salve.eventsToTreeString(walker.possible())}`,
+      ["initial"]
+    );
 
     const parser = makeParser(er, walker);
     parser.write(xmlSource).close();
@@ -256,8 +275,7 @@ function dropId(obj, memo) {
   for (const key in obj) {
     if (key === "id") {
       delete obj[key];
-    }
-    else if (typeof obj[key] === "object") {
+    } else if (typeof obj[key] === "object") {
       dropId(obj[key], memo);
     }
   }
@@ -278,8 +296,10 @@ describe("readTreeFromJSON", () => {
     const obj = JSON.parse(source);
     // We have to remove the ids because they are generated to make each object
     // unique.
-    assert.deepEqual(dropId(salve.readTreeFromJSON(obj), []),
-                     dropId(salve.readTreeFromJSON(obj), []));
+    assert.deepEqual(
+      dropId(salve.readTreeFromJSON(obj), []),
+      dropId(salve.readTreeFromJSON(obj), [])
+    );
   });
 });
 
@@ -292,8 +312,10 @@ describe("GrammarWalker.fireEvent reports no errors on", () => {
 
   it("a tei file, with namespaces", makeValidTest("namespaces"));
 
-  it("a tei file using a more complex schema",
-     makeValidTest("tei-with-modules"));
+  it(
+    "a tei file using a more complex schema",
+    makeValidTest("tei-with-modules")
+  );
 
   it("an old error case (1)", makeValidTest("old-error-case-1"));
 
@@ -316,8 +338,7 @@ describe("GrammarWalker.fireEvent", () => {
         let tree;
         try {
           tree = salve.readTreeFromJSON(source);
-        }
-        catch (e) {
+        } catch (e) {
           if (e instanceof salve.ValidationError) {
             // eslint-disable-next-line no-console
             console.log(e.toString());
@@ -329,8 +350,7 @@ describe("GrammarWalker.fireEvent", () => {
         const xmlSource = fileAsString(`test/${dir}/to_parse.xml`);
 
         // Get the expected results
-        const expectedSource =
-                fileAsString(`test/${dir}/results.txt`);
+        const expectedSource = fileAsString(`test/${dir}/results.txt`);
         const expected = expectedSource.split("\n");
 
         const ce = new ComparisonEngine(expected);
@@ -355,23 +375,29 @@ describe("GrammarWalker.fireEvent", () => {
 
         it("which is empty", () => {
           const ret = walker.end();
-          assert.deepEqual(ret.map(x => x.toString()), [
-            `tag required: {"ns":"http://www.tei-c.org/ns/1.0","name":"TEI"}`,
-          ]);
+          assert.deepEqual(
+            ret.map((x) => x.toString()),
+            [`tag required: {"ns":"http://www.tei-c.org/ns/1.0","name":"TEI"}`]
+          );
         });
 
         it("which has an unclosed element", () => {
           walker.nameResolver.enterContext();
           walker.nameResolver.definePrefix("", "http://www.tei-c.org/ns/1.0");
-          let ret = walker.fireEvent("startTagAndAttributes",
-                                     ["http://www.tei-c.org/ns/1.0", "TEI"]);
+          let ret = walker.fireEvent("startTagAndAttributes", [
+            "http://www.tei-c.org/ns/1.0",
+            "TEI",
+          ]);
           assert.isFalse(ret);
           ret = walker.end();
-          assert.deepEqual(ret.map(x => x.toString()), [
-            `tag required: {"ns":"http://www.tei-c.org/ns/1.0",\
+          assert.deepEqual(
+            ret.map((x) => x.toString()),
+            [
+              `tag required: {"ns":"http://www.tei-c.org/ns/1.0",\
 "name":"teiHeader"}`,
-            `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"TEI"}`,
-          ]);
+              `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"TEI"}`,
+            ]
+          );
         });
 
         it("which has more than one unclosed element", () => {
@@ -380,20 +406,25 @@ describe("GrammarWalker.fireEvent", () => {
           let ret;
           const names = ["TEI", "teiHeader", "fileDesc", "titleStmt"];
           for (const tagName of names) {
-            ret = walker.fireEvent("startTagAndAttributes",
-                                   ["http://www.tei-c.org/ns/1.0", tagName]);
+            ret = walker.fireEvent("startTagAndAttributes", [
+              "http://www.tei-c.org/ns/1.0",
+              tagName,
+            ]);
             assert.isFalse(ret);
           }
           ret = walker.end();
-          assert.deepEqual(ret.map(x => x.toString()), [
-            `tag required: {"ns":"http://www.tei-c.org/ns/1.0","name":"title"}`,
-            `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"titleStmt"}`,
-            `tag required: {"ns":"http://www.tei-c.org/ns/1.0","name":"publicationStmt"}`,
-            `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"fileDesc"}`,
-            `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"teiHeader"}`,
-            `tag required: {"ns":"http://www.tei-c.org/ns/1.0","name":"text"}`,
-            `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"TEI"}`,
-          ]);
+          assert.deepEqual(
+            ret.map((x) => x.toString()),
+            [
+              `tag required: {"ns":"http://www.tei-c.org/ns/1.0","name":"title"}`,
+              `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"titleStmt"}`,
+              `tag required: {"ns":"http://www.tei-c.org/ns/1.0","name":"publicationStmt"}`,
+              `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"fileDesc"}`,
+              `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"teiHeader"}`,
+              `tag required: {"ns":"http://www.tei-c.org/ns/1.0","name":"text"}`,
+              `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"TEI"}`,
+            ]
+          );
         });
 
         it("which has more than one unclosed element, with contents", () => {
@@ -402,28 +433,31 @@ describe("GrammarWalker.fireEvent", () => {
           let ret;
           const names = ["TEI", "teiHeader", "fileDesc", "titleStmt", "title"];
           for (const tagName of names) {
-            ret = walker.fireEvent("startTagAndAttributes",
-                                   ["http://www.tei-c.org/ns/1.0", tagName]);
+            ret = walker.fireEvent("startTagAndAttributes", [
+              "http://www.tei-c.org/ns/1.0",
+              tagName,
+            ]);
             assert.isFalse(ret);
           }
           ret = walker.fireEvent("text", ["toto"]);
           assert.isFalse(ret);
           ret = walker.end();
-          assert.deepEqual(ret.map(x => x.toString()), [
-            `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"title"}`,
-            `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"titleStmt"}`,
-            `tag required: {"ns":"http://www.tei-c.org/ns/1.0","name":"publicationStmt"}`,
-            `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"fileDesc"}`,
-            `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"teiHeader"}`,
-            `tag required: {"ns":"http://www.tei-c.org/ns/1.0","name":"text"}`,
-            `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"TEI"}`,
-          ]);
+          assert.deepEqual(
+            ret.map((x) => x.toString()),
+            [
+              `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"title"}`,
+              `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"titleStmt"}`,
+              `tag required: {"ns":"http://www.tei-c.org/ns/1.0","name":"publicationStmt"}`,
+              `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"fileDesc"}`,
+              `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"teiHeader"}`,
+              `tag required: {"ns":"http://www.tei-c.org/ns/1.0","name":"text"}`,
+              `tag not closed: {"ns":"http://www.tei-c.org/ns/1.0","name":"TEI"}`,
+            ]
+          );
         });
 
-        it("which has a missing namespace",
-           makeErrorTest("missing_namespace"));
-        it("which has a missing element",
-           makeErrorTest("missing_element"));
+        it("which has a missing namespace", makeErrorTest("missing_namespace"));
+        it("which has a missing element", makeErrorTest("missing_element"));
       });
     }
 
@@ -434,61 +468,74 @@ describe("GrammarWalker.fireEvent", () => {
       before(() => {
         rng = "test/simple/simplified-rng.js";
       });
-      it("which has a missing attribute",
-         makeErrorTest("missing_attribute"));
-      it("which has misplaced text",
-         makeErrorTest("misplaced_text"));
-      it("which has foreign elements followed by misplaced text",
-         makeErrorTest("foreign_elements", {
-           check_fireEvent_invocation: true,
-           check_possible: true,
-         }));
-      it("which has inferable foreign elements",
-         makeErrorTest("foreign_elements_inferable", {
-           check_fireEvent_invocation: true,
-           check_possible: true,
-         }));
+      it("which has a missing attribute", makeErrorTest("missing_attribute"));
+      it("which has misplaced text", makeErrorTest("misplaced_text"));
+      it(
+        "which has foreign elements followed by misplaced text",
+        makeErrorTest("foreign_elements", {
+          check_fireEvent_invocation: true,
+          check_possible: true,
+        })
+      );
+      it(
+        "which has inferable foreign elements",
+        makeErrorTest("foreign_elements_inferable", {
+          check_fireEvent_invocation: true,
+          check_possible: true,
+        })
+      );
     });
 
     describe("ad hoc schema", () => {
       before(() => {
         rng = undefined;
       });
-      it("which has a choice not chosen",
-         makeErrorTest("choice_not_chosen", {
-           check_fireEvent_invocation: true,
-           check_possible: false,
-         }));
-      it("which has a choice ended by a subsequent item",
-         makeErrorTest("choice_ended_by_following_item", {
-           check_fireEvent_invocation: true,
-           check_possible: false,
-         }));
+      it(
+        "which has a choice not chosen",
+        makeErrorTest("choice_not_chosen", {
+          check_fireEvent_invocation: true,
+          check_possible: false,
+        })
+      );
+      it(
+        "which has a choice ended by a subsequent item",
+        makeErrorTest("choice_ended_by_following_item", {
+          check_fireEvent_invocation: true,
+          check_possible: false,
+        })
+      );
 
-      it("which has a one-or-more prematurely ended",
-         makeErrorTest("one_or_more_not_satisfied", {
-           check_fireEvent_invocation: true,
-           check_possible: false,
-         }));
+      it(
+        "which has a one-or-more prematurely ended",
+        makeErrorTest("one_or_more_not_satisfied", {
+          check_fireEvent_invocation: true,
+          check_possible: false,
+        })
+      );
 
       it("top-level opening tag without closing", () => {
-        const tree =
-              salve.readTreeFromJSON(
-                fileAsString("test/opening_no_closing/simplified-rng.js"));
+        const tree = salve.readTreeFromJSON(
+          fileAsString("test/opening_no_closing/simplified-rng.js")
+        );
         const walker = tree.newWalker();
         let ret = walker.fireEvent("startTagAndAttributes", ["", "html"]);
         ret = walker.end();
-        assert.deepEqual(ret.map(x => x.toString()), [
-          `tag required: {"ns":"","name":"q"}`,
-          `tag not closed: {"ns":"","name":"html"}`,
-        ]);
+        assert.deepEqual(
+          ret.map((x) => x.toString()),
+          [
+            `tag required: {"ns":"","name":"q"}`,
+            `tag not closed: {"ns":"","name":"html"}`,
+          ]
+        );
       });
 
-      it("invalid attribute",
-         makeErrorTest("invalid_attribute", {
-           check_fireEvent_invocation: true,
-           check_possible: false,
-         }));
+      it(
+        "invalid attribute",
+        makeErrorTest("invalid_attribute", {
+          check_fireEvent_invocation: true,
+          check_possible: false,
+        })
+      );
 
       it("NsName fails a match", makeErrorTest("name_error1"));
 
@@ -496,11 +543,9 @@ describe("GrammarWalker.fireEvent", () => {
 
       it("Except fails a match", makeErrorTest("name_error3"));
 
-      it("Element in Interleave",
-         makeErrorTest("element_in_interleave"));
+      it("Element in Interleave", makeErrorTest("element_in_interleave"));
 
-      it("Text in Interleave",
-         makeErrorTest("text_in_interleave"));
+      it("Text in Interleave", makeErrorTest("text_in_interleave"));
     });
 
     it("an attribute without value", () => {
@@ -517,15 +562,15 @@ describe("GrammarWalker.fireEvent", () => {
       assert.equal(ret.length, 1);
       assert.equal(
         ret[0].toString(),
-        "attribute not allowed here: {\"ns\":\"\",\"name\":\"style\"}");
+        'attribute not allowed here: {"ns":"","name":"style"}'
+      );
     });
   });
 
   describe("handles valid documents having", () => {
     it("attributes in any valid order", () => {
       // Read the RNG tree.
-      const source = fileAsString(
-        "test/attribute-order/simplified-rng.js");
+      const source = fileAsString("test/attribute-order/simplified-rng.js");
 
       const tree = salve.readTreeFromJSON(source);
       const walker = tree.newWalker();
@@ -542,9 +587,7 @@ describe("GrammarWalker.fireEvent", () => {
         ["attr-c", "attr-a", "attr-b"],
         ["attr-c", "attr-b", "attr-a"],
       ];
-      const stub =
-              "attributeName:\n" +
-              "    ";
+      const stub = "attributeName:\n" + "    ";
       for (const perm of permutations) {
         ret = walker.fireEvent("enterStartTag", ["", "em"]);
         assert.isFalse(ret, "entering em");
@@ -555,8 +598,10 @@ describe("GrammarWalker.fireEvent", () => {
         }
         for (const attr of perm) {
           const sorted = possible.slice().sort();
-          assert.equal(salve.eventsToTreeString(walker.possible()),
-                       `${stub}${sorted.join("\n    ")}\n`);
+          assert.equal(
+            salve.eventsToTreeString(walker.possible()),
+            `${stub}${sorted.join("\n    ")}\n`
+          );
 
           ret = walker.fireEvent("attributeName", ["", attr]);
           assert.isFalse(ret);
@@ -570,8 +615,10 @@ describe("GrammarWalker.fireEvent", () => {
 
           // Seen all possible attributes.
           if (!possible.length) {
-            assert.equal(salve.eventsToTreeString(walker.possible()),
-                         "leaveStartTag\n");
+            assert.equal(
+              salve.eventsToTreeString(walker.possible()),
+              "leaveStartTag\n"
+            );
           }
         }
 
@@ -585,7 +632,8 @@ describe("GrammarWalker.fireEvent", () => {
     it("missing attributes", () => {
       // Read the RNG tree.
       const source = fileAsString(
-        "test/multiple_missing_attributes/simplified-rng.js");
+        "test/multiple_missing_attributes/simplified-rng.js"
+      );
 
       const tree = salve.readTreeFromJSON(source);
       const walker = tree.newWalker();
@@ -597,15 +645,19 @@ describe("GrammarWalker.fireEvent", () => {
       ret = walker.fireEvent("enterStartTag", ["", "em"]);
       assert.isFalse(ret, "entering em");
       ret = walker.fireEvent("leaveStartTag", []);
-      assert.deepEqual(ret.map(x => x.toString()), [
-        "attribute missing: {\"ns\":\"\",\"name\":\"attr-a\"}",
-        "attribute missing: {\"ns\":\"\",\"name\":\"attr-b\"}",
-        "attribute missing: {\"ns\":\"\",\"name\":\"attr-c\"}",
-      ]);
+      assert.deepEqual(
+        ret.map((x) => x.toString()),
+        [
+          'attribute missing: {"ns":"","name":"attr-a"}',
+          'attribute missing: {"ns":"","name":"attr-b"}',
+          'attribute missing: {"ns":"","name":"attr-c"}',
+        ]
+      );
       ret = walker.fireEvent("endTag", ["", "em"]);
-      assert.deepEqual(ret.map(x => x.toString()), [
-        "tag required: {\"ns\":\"\",\"name\":\"foo\"}",
-      ]);
+      assert.deepEqual(
+        ret.map((x) => x.toString()),
+        ['tag required: {"ns":"","name":"foo"}']
+      );
     });
 
     it("value attribute", () => {
@@ -620,9 +672,10 @@ describe("GrammarWalker.fireEvent", () => {
       assert.isFalse(ret);
 
       ret = walker.fireEvent("attributeValue", [""]);
-      assert.deepEqual(ret.map(x => x.toString()), [
-        "one value required from the following: a, b, c",
-      ]);
+      assert.deepEqual(
+        ret.map((x) => x.toString()),
+        ["one value required from the following: a, b, c"]
+      );
     });
 
     it("errors after attributes: report errors", () => {
@@ -631,7 +684,8 @@ describe("GrammarWalker.fireEvent", () => {
 
       // Read the RNG tree.
       const source = fileAsString(
-        "test/multiple_missing_attributes/simplified-rng.js");
+        "test/multiple_missing_attributes/simplified-rng.js"
+      );
 
       const tree = salve.readTreeFromJSON(source);
       const walker = tree.newWalker();
@@ -664,10 +718,13 @@ describe("GrammarWalker.fireEvent", () => {
       ret = walker.fireEvent("endTag", ["", "foo"]);
       assert.isFalse(ret);
       ret = walker.fireEvent("endTag", ["", "em"]);
-      assert.deepEqual(ret.map(x => x.toString()), [
-        "must choose either {\"ns\":\"\",\"name\":\"bar\"} or " +
-          "{\"ns\":\"\",\"name\":\"baz\"}",
-      ]);
+      assert.deepEqual(
+        ret.map((x) => x.toString()),
+        [
+          'must choose either {"ns":"","name":"bar"} or ' +
+            '{"ns":"","name":"baz"}',
+        ]
+      );
     });
 
     it("errors after attributes: don't report extraneous errors", () => {
@@ -676,7 +733,8 @@ describe("GrammarWalker.fireEvent", () => {
 
       // Read the RNG tree.
       const source = fileAsString(
-        "test/multiple_missing_attributes/simplified-rng.js");
+        "test/multiple_missing_attributes/simplified-rng.js"
+      );
 
       const tree = salve.readTreeFromJSON(source);
       const walker = tree.newWalker();
@@ -688,11 +746,14 @@ describe("GrammarWalker.fireEvent", () => {
       ret = walker.fireEvent("enterStartTag", ["", "em"]);
       assert.isFalse(ret, "entering em");
       ret = walker.fireEvent("leaveStartTag", []);
-      assert.deepEqual(ret.map(x => x.toString()), [
-        "attribute missing: {\"ns\":\"\",\"name\":\"attr-a\"}",
-        "attribute missing: {\"ns\":\"\",\"name\":\"attr-b\"}",
-        "attribute missing: {\"ns\":\"\",\"name\":\"attr-c\"}",
-      ]);
+      assert.deepEqual(
+        ret.map((x) => x.toString()),
+        [
+          'attribute missing: {"ns":"","name":"attr-a"}',
+          'attribute missing: {"ns":"","name":"attr-b"}',
+          'attribute missing: {"ns":"","name":"attr-c"}',
+        ]
+      );
 
       ret = walker.fireEvent("enterStartTag", ["", "foo"]);
       assert.isFalse(ret);
@@ -730,8 +791,7 @@ describe("GrammarWalker.fireEvent", () => {
 
       const tree = salve.readTreeFromJSON(source);
       const walker = tree.newWalker();
-      let ret = walker.fireEvent(
-        "enterStartTag", ["", "html"]);
+      let ret = walker.fireEvent("enterStartTag", ["", "html"]);
       assert.isFalse(ret);
       ret = walker.fireEvent("attributeName", ["", "style"]);
       assert.isFalse(ret);
@@ -739,10 +799,12 @@ describe("GrammarWalker.fireEvent", () => {
       assert.isFalse(ret);
       ret = walker.fireEvent("attributeValue", ["", "x"]);
       assert.equal(ret.length, 1);
-      assert.equal(ret[0].toString(),
-                   "unexpected attributeValue event; " +
-                   "it is likely that " +
-                   "fireEvent is incorrectly called");
+      assert.equal(
+        ret[0].toString(),
+        "unexpected attributeValue event; " +
+          "it is likely that " +
+          "fireEvent is incorrectly called"
+      );
     });
 
     it("duplicate endTag", () => {
@@ -751,8 +813,7 @@ describe("GrammarWalker.fireEvent", () => {
 
       const tree = salve.readTreeFromJSON(source);
       const walker = tree.newWalker();
-      let ret = walker.fireEvent(
-        "enterStartTag", ["", "html"]);
+      let ret = walker.fireEvent("enterStartTag", ["", "html"]);
       assert.isFalse(ret);
       ret = walker.fireEvent("attributeName", ["", "style"]);
       assert.isFalse(ret);
@@ -762,12 +823,13 @@ describe("GrammarWalker.fireEvent", () => {
       assert.isFalse(ret);
       ret = walker.fireEvent("endTag", ["", "html"]);
       assert.equal(ret.length, 1);
-      assert.equal(ret[0].toString(),
-                   "tag required: {\"ns\":\"\",\"name\":\"head\"}");
+      assert.equal(ret[0].toString(), 'tag required: {"ns":"","name":"head"}');
       ret = walker.fireEvent("endTag", ["", "html"]);
       assert.equal(ret.length, 1);
-      assert.equal(ret[0].toString(),
-                   "unexpected end tag: {\"ns\":\"\",\"name\":\"html\"}");
+      assert.equal(
+        ret[0].toString(),
+        'unexpected end tag: {"ns":"","name":"html"}'
+      );
     });
   });
 });
@@ -785,8 +847,7 @@ describe("error objects", () => {
       const err = new ctor(...["blah"].concat(names));
       assert.equal(err.toString(), first);
       assert.sameMembers(err.getNames(), names);
-      assert.equal(err.toStringWithNames(fakeNames),
-                   second);
+      assert.equal(err.toStringWithNames(fakeNames), second);
     });
   }
   makeErrorTest("AttributeNameError");
@@ -797,14 +858,14 @@ describe("error objects", () => {
     const namesA = [new salve.EName("a", "b"), new salve.EName("c", "d")];
     const namesB = [new salve.EName("e", "f"), new salve.EName("g", "h")];
     const err = new salve.ChoiceError(namesA, namesB);
-    assert.equal(err.toString(),
-                 "must choose either {a}b, {c}d or {e}f, {g}h");
+    assert.equal(err.toString(), "must choose either {a}b, {c}d or {e}f, {g}h");
     assert.sameMembers(err.getNames(), namesA.concat(namesB));
-    assert.equal(err.toStringWithNames(["a", "b", "c", "d"]),
-                 "must choose either a, b or c, d");
+    assert.equal(
+      err.toStringWithNames(["a", "b", "c", "d"]),
+      "must choose either a, b or c, d"
+    );
   });
 });
-
 
 describe("Grammar", () => {
   describe("getNamespaces", () => {
@@ -813,33 +874,32 @@ describe("Grammar", () => {
       const source = fileAsString("test/tei/simplified-rng.js");
 
       const tree = salve.readTreeFromJSON(source);
-      assert.sameMembers(
-        tree.getNamespaces(),
-        ["http://www.tei-c.org/ns/1.0", "http://www.w3.org/XML/1998/namespace"]);
+      assert.sameMembers(tree.getNamespaces(), [
+        "http://www.tei-c.org/ns/1.0",
+        "http://www.w3.org/XML/1998/namespace",
+      ]);
     });
 
-    it("returns an empty namespace when there are no namespaces",
-       () => {
-         // Read the RNG tree.
-         const source = fileAsString("test/simple/simplified-rng.js");
+    it("returns an empty namespace when there are no namespaces", () => {
+      // Read the RNG tree.
+      const source = fileAsString("test/simple/simplified-rng.js");
 
-         const tree = salve.readTreeFromJSON(source);
-         assert.sameMembers(tree.getNamespaces(), [""]);
-       });
+      const tree = salve.readTreeFromJSON(source);
+      assert.sameMembers(tree.getNamespaces(), [""]);
+    });
 
-    it("returns * when anyName is used and ::except when except is used",
-       () => {
-         // Read the RNG tree.
-         const source = fileAsString("test/names/simplified-rng.js");
+    it("returns * when anyName is used and ::except when except is used", () => {
+      // Read the RNG tree.
+      const source = fileAsString("test/names/simplified-rng.js");
 
-         const tree = salve.readTreeFromJSON(source);
-         assert.sameMembers(tree.getNamespaces(), [
-           "",
-           "foo:foo",
-           "*",
-           "::except",
-         ]);
-       });
+      const tree = salve.readTreeFromJSON(source);
+      assert.sameMembers(tree.getNamespaces(), [
+        "",
+        "foo:foo",
+        "*",
+        "::except",
+      ]);
+    });
   });
 });
 
@@ -879,9 +939,11 @@ describe("Name pattern", () => {
     it("converts to a string", () => {
       // eslint-disable-next-line quotes
       assert.equal(np.toString(), `{"ns":"a","name":"b"}`);
-      assert.equal(new salve.Name("1\"\\2", "q").toString(),
-                   // eslint-disable-next-line quotes
-                   `{"ns":"1\\"\\\\2","name":"q"}`);
+      assert.equal(
+        new salve.Name('1"\\2', "q").toString(),
+        // eslint-disable-next-line quotes
+        `{"ns":"1\\"\\\\2","name":"q"}`
+      );
     });
 
     it("holds one namespace", () => {
@@ -947,7 +1009,9 @@ describe("Name pattern", () => {
       assert.isTrue(complex.wildcardMatch("c", "d"));
 
       const x = new salve.NameChoice(
-        new salve.AnyName(new salve.Name("c", "d")), b);
+        new salve.AnyName(new salve.Name("c", "d")),
+        b
+      );
       // This is false because our AnyName explicitly excludes {c}d.
       assert.isFalse(x.wildcardMatch("c", "d"));
       assert.isTrue(x.wildcardMatch("a", "b"));
@@ -961,9 +1025,11 @@ describe("Name pattern", () => {
     });
 
     it("converts to a string", () => {
-      assert.equal(simple.toString(),
-                   // eslint-disable-next-line quotes
-                   `{"a":{"ns":"a","name":"b"},"b":{"ns":"c","name":"d"}}`);
+      assert.equal(
+        simple.toString(),
+        // eslint-disable-next-line quotes
+        `{"a":{"ns":"a","name":"b"},"b":{"ns":"c","name":"d"}}`
+      );
     });
 
     it("holds multiple namespaces", () => {
@@ -1027,24 +1093,27 @@ describe("Name pattern", () => {
 
     it("converts to an object", () => {
       assert.deepEqual(np.toObject(), { ns: "a" });
-      assert.deepEqual(withExcept.toObject(),
-                       {
-                         ns: "a",
-                         except: { ns: "a", name: "b" },
-                       });
+      assert.deepEqual(withExcept.toObject(), {
+        ns: "a",
+        except: { ns: "a", name: "b" },
+      });
     });
 
     it("converts to a string", () => {
       // eslint-disable-next-line quotes
       assert.equal(np.toString(), `{"ns":"a"}`);
-      assert.equal(withExcept.toString(),
-                   // eslint-disable-next-line quotes
-                   `{"ns":"a","except":{"ns":"a","name":"b"}}`);
+      assert.equal(
+        withExcept.toString(),
+        // eslint-disable-next-line quotes
+        `{"ns":"a","except":{"ns":"a","name":"b"}}`
+      );
       // eslint-disable-next-line quotes
       assert.equal(np.toString(), `{"ns":"a"}`);
-      assert.equal(new salve.NsName("1\"\\2").toString(),
-                   // eslint-disable-next-line quotes
-                   `{"ns":"1\\"\\\\2"}`);
+      assert.equal(
+        new salve.NsName('1"\\2').toString(),
+        // eslint-disable-next-line quotes
+        `{"ns":"1\\"\\\\2"}`
+      );
     });
 
     it("holds a single namespace", () => {
@@ -1100,14 +1169,17 @@ describe("Name pattern", () => {
       withNsNameExcept = new salve.AnyName(new salve.NsName("a"));
       // This matches all names in all namespaces, except for namespace "a"
       // where it matches only "{a}foo".
-      doubleExcept =
-        new salve.AnyName(new salve.NsName("a", new salve.Name("a", "foo")));
+      doubleExcept = new salve.AnyName(
+        new salve.NsName("a", new salve.Name("a", "foo"))
+      );
       // This is the same as the previous one, except that it also excludes
       // {q}moo from the names matched.
-      doubleExceptWithChoice =
-        new salve.AnyName(new salve.NameChoice(
-                            new salve.Name("q", "moo"),
-                            new salve.NsName("a", new salve.Name("a", "foo"))));
+      doubleExceptWithChoice = new salve.AnyName(
+        new salve.NameChoice(
+          new salve.Name("q", "moo"),
+          new salve.NsName("a", new salve.Name("a", "foo"))
+        )
+      );
     });
 
     it("is not simple", () => {
@@ -1134,19 +1206,20 @@ describe("Name pattern", () => {
 
     it("converts to an object", () => {
       assert.deepEqual(np.toObject(), { pattern: "AnyName" });
-      assert.deepEqual(withExcept.toObject(),
-                       {
-                         pattern: "AnyName",
-                         except: { ns: "a", name: "b" },
-                       });
+      assert.deepEqual(withExcept.toObject(), {
+        pattern: "AnyName",
+        except: { ns: "a", name: "b" },
+      });
     });
 
     it("converts to a string", () => {
       // eslint-disable-next-line quotes
       assert.equal(np.toString(), `{"pattern":"AnyName"}`);
-      assert.equal(withExcept.toString(),
-                   // eslint-disable-next-line quotes
-                   `{"pattern":"AnyName","except":{"ns":"a","name":"b"}}`);
+      assert.equal(
+        withExcept.toString(),
+        // eslint-disable-next-line quotes
+        `{"pattern":"AnyName","except":{"ns":"a","name":"b"}}`
+      );
     });
 
     it("holds all namespaces", () => {
@@ -1191,8 +1264,7 @@ describe("Name pattern", () => {
 
       describe("when having a double except", () => {
         it("with a Name matching the inner except", () => {
-          assert.isTrue(
-            doubleExcept.intersects(new salve.Name("a", "foo")));
+          assert.isTrue(doubleExcept.intersects(new salve.Name("a", "foo")));
         });
 
         it("with an NsName matching the except", () => {
@@ -1204,46 +1276,59 @@ describe("Name pattern", () => {
         });
 
         it("with a Name avoiding all excepts", () => {
-          assert.isTrue(
-            doubleExcept.intersects(new salve.Name("zzz", "foo")));
+          assert.isTrue(doubleExcept.intersects(new salve.Name("zzz", "foo")));
         });
 
         it("not with a Name avoiding the inner except", () => {
-          assert.isFalse(
-            doubleExcept.intersects(new salve.Name("a", "blah")));
+          assert.isFalse(doubleExcept.intersects(new salve.Name("a", "blah")));
         });
 
         it("not with an NsName that except the inner except", () => {
           assert.isFalse(
-            doubleExcept.intersects(new salve.NsName("a", new salve.Name("a", "foo"))));
+            doubleExcept.intersects(
+              new salve.NsName("a", new salve.Name("a", "foo"))
+            )
+          );
         });
       });
 
       describe("when having a double except with choice", () => {
         it("with a Name matching the inner except", () => {
-          assert.isTrue(doubleExceptWithChoice.intersects(new salve.Name("a", "foo")));
+          assert.isTrue(
+            doubleExceptWithChoice.intersects(new salve.Name("a", "foo"))
+          );
         });
 
         it("with an NsName matching the except", () => {
-          assert.isTrue(doubleExceptWithChoice.intersects(new salve.NsName("a")));
+          assert.isTrue(
+            doubleExceptWithChoice.intersects(new salve.NsName("a"))
+          );
         });
 
         it("with an NsName avoiding all excepts", () => {
-          assert.isTrue(doubleExceptWithChoice.intersects(new salve.NsName("b")));
+          assert.isTrue(
+            doubleExceptWithChoice.intersects(new salve.NsName("b"))
+          );
         });
 
         it("with a Name avoiding all excepts", () => {
-          assert.isTrue(doubleExceptWithChoice.intersects(new salve.Name("zzz", "foo")));
+          assert.isTrue(
+            doubleExceptWithChoice.intersects(new salve.Name("zzz", "foo"))
+          );
         });
 
         it("not with a Name avoiding the inner except", () => {
-          assert.isFalse(doubleExceptWithChoice.intersects(new salve.Name("a", "blah")));
+          assert.isFalse(
+            doubleExceptWithChoice.intersects(new salve.Name("a", "blah"))
+          );
         });
 
         it("not with an NsName that except the inner except", () => {
           assert.isFalse(
             doubleExceptWithChoice.intersects(
-              new salve.NsName("a", new salve.Name("a", "foo"))));
+              new salve.NsName("a", new salve.Name("a", "foo"))
+            )
+          );
         });
       });
     });
