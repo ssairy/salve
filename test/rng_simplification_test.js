@@ -33,7 +33,7 @@ describe("rng simplification", () => {
     if (number === 1) {
       child = spawn(
         "java",
-        ["-jar", "/usr/share/java/Saxon-HE.jar", `-xsl:${stepPath}`,
+        ["-jar", "/Users/shriyanssairy/Documents/MITH388/SaxonHE12-9J/saxon-he-12.9.jar", `-xsl:${stepPath}`,
          `-s:${inpath}`, `-o:${outpath}`, `originalDir=${originalDir}`],
         { stdio: "inherit" });
     }

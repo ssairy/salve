@@ -248,7 +248,12 @@ function makeValidTest(dir) {
     const parser = makeParser(er, walker);
     parser.write(xmlSource).close();
 
-    ce.compare(`end returned ${walker.end()}`, ["*final*"]);
+    try {
+      ce.compare(`end returned ${walker.end()}`, ["*final*"]);
+    } catch (e) {
+      console.log("test dir:", dir);
+      throw e;
+    }
 
     // Roll back; >> gives us an integer
     // eslint-disable-next-line no-bitwise
