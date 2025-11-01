@@ -595,7 +595,6 @@ export class BasicParser {
     // We have to validate the node even if we are not going to record it,
     // because RelaxNG does not allow foreign nodes everywhere.
     this.validator.onopentag(node);
-
     // We can skip creating Element objects for foreign nodes and their
     // children.
     if ((node.uri !== RELAXNG_URI

@@ -62,6 +62,11 @@ build, from the ``build/dist/bin`` directory.
 If you are looking at the files installed by ``npm`` when you install salve as a
 *package*, the files in ``bin`` *are* those you want to execute.
 
+Testing
+=======
+
+Step-by-step instructions for preparing a test environment, installing Saxon, and reproducing current test failures are documented in [doc/testing.md](doc/testing.md).
+
 Basic Usage
 ===========
 
