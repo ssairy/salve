@@ -6,6 +6,9 @@
 
   <define name="note">
     <element name="note">
+      <attribute name="name">
+        <text/>
+      </attribute>
       <ref name="title"/>
     </element>
   </define>

@@ -215,6 +215,11 @@ function makeValidTest(dir) {
     // Read the RNG tree.
     const source = fileAsString(`test/${dir}/simplified-rng.js`);
 
+    if (dir === "minimal"){
+      // Minimal schema optimization test
+      console.log("Testing minimal schema optimization");
+    }
+
     let tree;
     try {
       tree = salve.readTreeFromJSON(source);
@@ -310,7 +315,7 @@ describe("readTreeFromJSON", () => {
 
 describe("GrammarWalker.fireEvent reports no errors on", () => {
   it("a simple test", makeValidTest("simple"));
-
+  it("minimal note schema", makeValidTest("minimal"));
   it("choice matching", makeValidTest("choice_matching"));
 
   it("a tei file", makeValidTest("tei"));

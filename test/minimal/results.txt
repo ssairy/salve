@@ -1,0 +1,92 @@
+wholly context-independent true
+possible events
+enterStartTag:
+    {"ns":"","name":"note"}
+
+invoking fireEvent with Event: enterContext
+fireEvent returned false
+
+invoking fireEvent with Event: enterStartTag, , note
+fireEvent returned false
+possible events
+leaveStartTag
+
+invoking fireEvent with Event: leaveStartTag
+fireEvent returned false
+possible events
+enterStartTag:
+    {"ns":"","name":"title"}
+
+invoking fireEvent with Event: enterContext
+fireEvent returned false
+
+invoking fireEvent with Event: enterStartTag, , title
+fireEvent returned false
+possible events
+leaveStartTag
+
+invoking fireEvent with Event: leaveStartTag
+fireEvent returned false
+possible events
+endTag:
+    {"ns":"","name":"title"}
+text:
+    /^[^]*$/
+
+invoking fireEvent with Event: text, Hello from SALVE
+fireEvent returned false
+possible events
+endTag:
+    {"ns":"","name":"title"}
+text:
+    /^[^]*$/
+
+invoking fireEvent with Event: endTag, , title
+fireEvent returned false
+possible events
+endTag:
+    {"ns":"","name":"note"}
+
+invoking fireEvent with Event: leaveContext
+fireEvent returned false
+
+invoking fireEvent with Event: endTag, , note
+fireEvent returned false
+possible events
+
+invoking fireEvent with Event: leaveContext
+fireEvent returned false
+end returned false
+
+invoking fireEvent with Event: leaveStartTag
+fireEvent returned false
+possible events
+endTag:
+    {"ns":"","name":"title"}
+text:
+    /^[^]*$/
+
+invoking fireEvent with Event: text, Hello from SALVE
+fireEvent returned false
+possible events
+endTag:
+    {"ns":"","name":"title"}
+text:
+    /^[^]*$/
+
+invoking fireEvent with Event: endTag, , title
+fireEvent returned false
+possible events
+endTag:
+    {"ns":"","name":"note"}
+
+invoking fireEvent with Event: leaveContext
+fireEvent returned false
+
+invoking fireEvent with Event: endTag, , note
+fireEvent returned false
+possible events
+
+invoking fireEvent with Event: leaveContext
+fireEvent returned false
+end returned false
