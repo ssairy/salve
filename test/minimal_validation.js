@@ -249,6 +249,14 @@ describe("fixture RNG validation", () => {
       );
 
       it(
+        "choice_ended_by_following_item emits ElementNameError then ChoiceError",
+        makeInvalidTest("choice_ended_by_following_item", [
+          salve.ElementNameError,
+          salve.ChoiceError,
+        ])
+      );
+
+      it(
         "invalid_attribute emits AttributeNameErrors",
         makeInvalidTest("invalid_attribute", [
           salve.AttributeNameError,
@@ -257,11 +265,45 @@ describe("fixture RNG validation", () => {
       );
 
       it(
+        "one_or_more_not_satisfied emits an ElementNameError",
+        makeInvalidTest("one_or_more_not_satisfied", [salve.ElementNameError])
+      );
+
+      it(
         "name_error1 emits ElementNameErrors",
         makeInvalidTest("name_error1", [
           salve.ElementNameError,
           salve.ElementNameError,
         ])
+      );
+
+      it(
+        "name_error2 emits ElementNameErrors",
+        makeInvalidTest("name_error2", [
+          salve.ElementNameError,
+          salve.ElementNameError,
+        ])
+      );
+
+      it(
+        "name_error3 emits ElementNameErrors",
+        makeInvalidTest("name_error3", [
+          salve.ElementNameError,
+          salve.ElementNameError,
+        ])
+      );
+
+      it(
+        "element_in_interleave emits ElementNameErrors",
+        makeInvalidTest("element_in_interleave", [
+          salve.ElementNameError,
+          salve.ElementNameError,
+        ])
+      );
+
+      it(
+        "text_in_interleave emits a ValidationError",
+        makeInvalidTest("text_in_interleave", [salve.ValidationError])
       );
     });
   }
